@@ -17,7 +17,7 @@ app.use(express.json());
 app.use(express.static("public"));
 
 // Проверка ключа
-app.post("/check-key", (req, res) => {
+app.post("/check-key", async (req, res) => {
   const inputKey = req.body.key?.trim();
 
   if (!inputKey) {
@@ -28,7 +28,8 @@ app.post("/check-key", (req, res) => {
 
   let keys;
   try {
-    keys = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+    keys = JSON.parse(await fs.promises.readFile(filePath, "utf-8"));
+    console.log("Текущие ключи:", keys); // Логируем текущие ключи
   } catch (err) {
     return res.status(500).json({ success: false, message: "Ошибка чтения базы ключей" });
   }
@@ -39,7 +40,14 @@ app.post("/check-key", (req, res) => {
 
   // Удаляем использованный ключ
   const updatedKeys = keys.filter(k => k !== inputKey);
-  fs.writeFileSync(filePath, JSON.stringify(updatedKeys, null, 2));
+  console.log("Обновлённые ключи:", updatedKeys); // Логируем обновлённые ключи
+
+  try {
+    await fs.promises.writeFile(filePath, JSON.stringify(updatedKeys, null, 2));
+    console.log("Запись в файл завершена."); // Логируем, что запись прошла успешно
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Ошибка записи базы ключей" });
+  }
 
   return res.json({ success: true });
 });
